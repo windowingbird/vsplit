@@ -28,8 +28,10 @@ library:
   dependencies:
   - optparse-applicative
   - typed-process
+  - MissingH
   - bytestring
   - directory
+  - temporary
   - filepath
   - async
 

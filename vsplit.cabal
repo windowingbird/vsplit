@@ -32,13 +32,15 @@ library
   hs-source-dirs:
       src
   build-depends:
-      async
+      MissingH
+    , async
     , base >=4.7 && <5
     , bytestring
     , directory
     , filepath
     , gitrev
     , optparse-applicative
+    , temporary
     , typed-process
   default-language: Haskell2010
 
