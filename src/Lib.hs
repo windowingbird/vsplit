@@ -92,7 +92,7 @@ cutCommand = command "cut"
       <*> strOption
       (    long "out"
            <> short 'o'
-           <> value "out.mp4"
+           <> value "output.mp4"
            <> metavar "OUT"
            <> help "specify output file, default value is output.mp4"
       )
