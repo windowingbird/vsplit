@@ -9,7 +9,7 @@
 
 ### 支持的命令/commands
 ``` bash
-$ ./vsplit -h
+$ vsplit -h
 Usage: vsplit COMMAND
 
 Available options:
@@ -23,7 +23,7 @@ Available commands:
 
 ### 分割命令/split command
 ``` bash
-$ ./vsplit -h split
+$ vsplit -h split
 Usage: vsplit split [-d|--duration DURATION] [-n|--number NUMBER] 
                     [-D|--dst DIST] SOURCE
   split a video file
@@ -38,7 +38,7 @@ Available options:
 
 ### 切片命令/cut command
 ``` bash
-$ ./vsplit -h cut
+$ vsplit -h cut
 Usage: vsplit cut [--ss START] [--to END] [--vb VIDEO BITRATE] [-o|--out OUT]
                   SOURCE
   cut a video file
