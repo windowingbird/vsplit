@@ -139,7 +139,7 @@ listenCommand = command "listen" ( info
         ( long "volume"
           <> short 'v'
           <> metavar "VOLUME"
-          <> help "specify volume, format XdB, optional" )
+          <> help "specify volume adjustment, format [-]XdB, optional" )
       )
       <*> strOption
       (    long "out"
