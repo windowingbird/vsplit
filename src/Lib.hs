@@ -10,7 +10,7 @@ import System.Process.Typed (readProcess, proc, setWorkingDir)
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import Control.Concurrent.Async (Async, async, wait)
 import System.Directory (createDirectoryIfMissing, getCurrentDirectory)
-import System.FilePath ((</>), takeExtension)
+import System.FilePath ((</>), takeExtension, replaceExtension)
 import System.Exit
 import System.IO.Temp (withSystemTempDirectory)
 import System.IO.PlafCompat (nullFileName)
@@ -20,6 +20,7 @@ import Vsplit.Command.Version (version)
 data Command
   = Split !Natural !Natural !String !String
   | Cut !(Maybe String) !(Maybe String) !String !String !String
+  | Listen !(Maybe String) !(Maybe String) !String !String !(Maybe String) !String !String
   | Version
   deriving (Eq, Show)
 
@@ -28,7 +29,7 @@ data Vsplit = Vsplit
   } deriving (Eq, Show)
 
 cmdParser :: Parser Vsplit
-cmdParser = Vsplit <$> hsubparser (splitCommand <> cutCommand <> versionCommand)
+cmdParser = Vsplit <$> hsubparser (splitCommand <> cutCommand <> listenCommand <> versionCommand)
 
 cmdParserInfo :: ParserInfo Vsplit
 cmdParserInfo = info (cmdParser <**> helper) idm
@@ -105,12 +106,64 @@ cutCommand = command "cut"
     )
   )
 
+listenCommand :: Mod CommandFields Command
+listenCommand = command "listen" ( info
+    ( Listen
+      <$> optional
+      ( strOption
+        ( long "ss"
+          <> metavar "START"
+          <> help "specify start time, format HH:MM:SS[.SSS], optional" )
+      )
+      <*> optional
+      ( strOption
+        ( long "to"
+          <> metavar "END"
+          <> help "specify end time, format HH:MM:SS[.SSS], optional" )
+      )
+      <*> ( strOption
+        ( long "format"
+          <> short 'f'
+          <> value "aac"
+          <> metavar "AUDIO FORMAT"
+          <> help "specify audio format, default aac, optional" )
+      )
+      <*> ( strOption
+        ( long "ab"
+          <> value "128K"
+          <> metavar "AUDIO BITRATE"
+          <> help "specify audio bitrate, default 128K, optional" )
+      )
+      <*> optional
+      ( strOption
+        ( long "volume"
+          <> short 'v'
+          <> metavar "VOLUME"
+          <> help "specify volume, format XdB, optional" )
+      )
+      <*> strOption
+      (    long "out"
+           <> short 'o'
+           <> value "output.m4a"
+           <> metavar "OUT"
+           <> help "specify output file, default value is output.m4a, file extension for mp3 and aac format will be automaticlly alternatived"
+      )
+      <*> strArgument
+      (    metavar "SOURCE"
+           <> help "specify source file"
+      )
+    )
+    ( progDesc "listen a video file"
+    )
+  )
+
 versionCommand :: Mod CommandFields Command
 versionCommand = command "version" (info (pure Version) (progDesc "Print version"))
 
 commandDispatch :: Command -> IO ()
 commandDispatch (Split duration base dst file) = split duration base dst file
 commandDispatch (Cut start end vb out file) = cut start end vb out file
+commandDispatch (Listen start end format ab vo out file) = listen start end format ab vo out file
 commandDispatch Version = version
 
 someFunc :: IO ()
@@ -191,4 +244,28 @@ cut ssM toM vb output input = do
             print err
           ExitSuccess -> pure ()
     pure ()
+  pure ()
+
+listen :: Maybe String -> Maybe String -> String -> String -> Maybe String -> String -> String -> IO ()
+listen ssM toM format ab voM output input = do
+  cur <- getCurrentDirectory
+  let ss = case ssM of
+        Just ssStr -> ["-ss", ssStr]
+        Nothing -> mempty
+  let to = case toM of
+        Just toStr -> ["-to", toStr]
+        Nothing -> mempty
+  let vo = case voM of
+        Just voStr -> ["-af","volume=" <> voStr]
+        Nothing -> mempty
+  let outfile = case format of
+        "mp3" -> replaceExtension output "mp3"
+        "aac" -> replaceExtension output "m4a"
+        _ -> output
+  let args = ss <> to <> ["-accurate_seek", "-i", cur </> input, "-vn", "-codec:a", format, "-b:a", ab] <> vo <> ["-avoid_negative_ts", "make_zero", "-y", outfile]
+  putStrLn $ "ffmpeg" <> " " <> unwords args
+  (exitCode, _out, _err) <- readProcess . proc "ffmpeg" $ args
+  case exitCode of
+    ExitSuccess -> pure ()
+    ExitFailure e -> print e
   pure ()
