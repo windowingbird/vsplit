@@ -18,6 +18,7 @@ Available options:
 Available commands:
   split                    split a video file
   cut                      cut a video file
+  listen                   listen a video file
   version                  Print version
 ```
 
@@ -48,6 +49,27 @@ Available options:
   --to END                 specify end time, format HH:MM:SS[.SSS], optional
   --vb VIDEO BITRATE       specify video bitrate, default 4M, optional
   -o,--out OUT             specify output file, default value is output.mp4
+  SOURCE                   specify source file
+  -h,--help                Show this help text
+```
+
+### 声音切片命令/listen command
+``` bash
+$ vsplit -h listen
+Usage: vsplit listen [--ss START] [--to END] [-f|--format AUDIO FORMAT] 
+                     [--ab AUDIO BITRATE] [-v|--volume VOLUME] [-o|--out OUT]
+                     SOURCE
+  listen a video file
+
+Available options:
+  --ss START               specify start time, format HH:MM:SS[.SSS], optional
+  --to END                 specify end time, format HH:MM:SS[.SSS], optional
+  -f,--format AUDIO FORMAT specify audio format, default aac, optional
+  --ab AUDIO BITRATE       specify audio bitrate, default 128K, optional
+  -v,--volume VOLUME       specify volume adjustment, format [-]XdB, optional
+  -o,--out OUT             specify output file, default value is output.m4a,
+                           file extension for mp3 and aac format will be
+                           automaticlly alternatived
   SOURCE                   specify source file
   -h,--help                Show this help text
 ```
