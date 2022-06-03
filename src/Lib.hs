@@ -14,7 +14,10 @@ import System.FilePath ((</>), takeExtension, replaceExtension)
 import System.Exit
 import System.IO.Temp (withSystemTempDirectory, withSystemTempFile)
 import System.IO.PlafCompat (nullFileName)
-import System.IO (hPutStrLn, hFlush)
+import System.IO (hFlush)
+import Data.Text (Text, unpack, pack)
+import Data.Text.IO (hPutStrLn)
+import Data.Maybe (fromMaybe)
 
 import Vsplit.Command.Version (version)
 
@@ -22,7 +25,7 @@ data Command
   = Split !Natural !Natural !String !String
   | Cut !(Maybe String) !(Maybe String) !String !String !String
   | Listen !(Maybe String) !(Maybe String) !String !String !(Maybe String) !String !String
-  | Combine ![String] !String
+  | Combine ![ Text ] !(Maybe String)
   | Version
   deriving (Eq, Show)
 
@@ -166,12 +169,12 @@ combineCommand = command "combine" ( info
         (metavar "INPUTS"
           <> help "specify input files" )
       )
-      <*> ( strOption
+      <*> optional
+      ( strOption
         ( long "out"
           <> short 'o'
-          <> value "p1.flv"
           <> metavar "OUT"
-          <> help "specify output file, default value is p1.flv" )
+          <> help "specify output file, default value is p1.[extension]" )
       )
     )
     ( progDesc "Combine video files"
@@ -292,11 +295,13 @@ listen ssM toM format ab voM output input = do
     ExitFailure e -> print e
   pure ()
 
-combine :: [ String ] -> String -> IO ()
-combine inputs output = do
+combine :: [ Text ] -> Maybe String -> IO ()
+combine inputs outputM = do
   cur <- getCurrentDirectory
+  let ext = takeExtension . unpack . head $ inputs
+  let output = fromMaybe (replaceExtension "p1.flv" ext) outputM
   withSystemTempFile "vsplit-combine" $ \tempFile tempFileHandle -> do
-    mapM_ (hPutStrLn tempFileHandle . ("file " <>) . (cur </>) ) inputs
+    mapM_ (hPutStrLn tempFileHandle . (pack "file '" <>) . (<> pack "'") . pack . (cur </>) . unpack) inputs
     hFlush tempFileHandle
     let args = ["-f", "concat", "-safe", "0", "-i", tempFile, "-c", "copy", output]
     putStrLn $ "ffmpeg" <> " " <> unwords args
