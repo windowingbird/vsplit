@@ -12,8 +12,9 @@ import Control.Concurrent.Async (Async, async, wait)
 import System.Directory (createDirectoryIfMissing, getCurrentDirectory)
 import System.FilePath ((</>), takeExtension, replaceExtension)
 import System.Exit
-import System.IO.Temp (withSystemTempDirectory)
+import System.IO.Temp (withSystemTempDirectory, withSystemTempFile)
 import System.IO.PlafCompat (nullFileName)
+import System.IO (hPutStrLn, hFlush)
 
 import Vsplit.Command.Version (version)
 
@@ -21,6 +22,7 @@ data Command
   = Split !Natural !Natural !String !String
   | Cut !(Maybe String) !(Maybe String) !String !String !String
   | Listen !(Maybe String) !(Maybe String) !String !String !(Maybe String) !String !String
+  | Combine ![String] !String
   | Version
   deriving (Eq, Show)
 
@@ -29,7 +31,7 @@ data Vsplit = Vsplit
   } deriving (Eq, Show)
 
 cmdParser :: Parser Vsplit
-cmdParser = Vsplit <$> hsubparser (splitCommand <> cutCommand <> listenCommand <> versionCommand)
+cmdParser = Vsplit <$> hsubparser (splitCommand <> cutCommand <> listenCommand <> combineCommand <> versionCommand)
 
 cmdParserInfo :: ParserInfo Vsplit
 cmdParserInfo = info (cmdParser <**> helper) idm
@@ -157,6 +159,25 @@ listenCommand = command "listen" ( info
     )
   )
 
+combineCommand :: Mod CommandFields Command
+combineCommand = command "combine" ( info
+    ( Combine  <$> many
+      ( strArgument
+        (metavar "INPUTS"
+          <> help "specify input files" )
+      )
+      <*> ( strOption
+        ( long "out"
+          <> short 'o'
+          <> value "p1.flv"
+          <> metavar "OUT"
+          <> help "specify output file, default value is p1.flv" )
+      )
+    )
+    ( progDesc "Combine video files"
+    )
+  )
+
 versionCommand :: Mod CommandFields Command
 versionCommand = command "version" (info (pure Version) (progDesc "Print version"))
 
@@ -164,6 +185,7 @@ commandDispatch :: Command -> IO ()
 commandDispatch (Split duration base dst file) = split duration base dst file
 commandDispatch (Cut start end vb out file) = cut start end vb out file
 commandDispatch (Listen start end format ab vo out file) = listen start end format ab vo out file
+commandDispatch (Combine inputs output) = combine inputs output
 commandDispatch Version = version
 
 someFunc :: IO ()
@@ -269,3 +291,18 @@ listen ssM toM format ab voM output input = do
     ExitSuccess -> pure ()
     ExitFailure e -> print e
   pure ()
+
+combine :: [ String ] -> String -> IO ()
+combine inputs output = do
+  cur <- getCurrentDirectory
+  withSystemTempFile "vsplit-combine" $ \tempFile tempFileHandle -> do
+    mapM_ (hPutStrLn tempFileHandle . ("file " <>) . (cur </>) ) inputs
+    hFlush tempFileHandle
+    let args = ["-f", "concat", "-safe", "0", "-i", tempFile, "-c", "copy", output]
+    putStrLn $ "ffmpeg" <> " " <> unwords args
+    (exitCode, _out, err) <- readProcess . proc "ffmpeg" $ args
+    case exitCode of
+      ExitSuccess -> pure ()
+      ExitFailure e -> do
+        print e
+        print err
