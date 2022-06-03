@@ -5,6 +5,10 @@
 
 切片命令：将`--ss`和`--to`参数传入ffmpeg，利用cpu对需要切片的视频片段进行libx265编码，对音频部分进行aac重编码，导出mp4格式的视频。
 
+声音切片命令：只对视频中的音频进行切片。
+
+合并命令：用帧复制(copy)的方式合并多个视频。
+
 ## 用法/Usage
 
 ### 支持的命令/commands
@@ -19,6 +23,7 @@ Available commands:
   split                    split a video file
   cut                      cut a video file
   listen                   listen a video file
+  combine                  Combine video files
   version                  Print version
 ```
 
@@ -71,6 +76,18 @@ Available options:
                            file extension for mp3 and aac format will be
                            automaticlly alternatived
   SOURCE                   specify source file
+  -h,--help                Show this help text
+```
+
+### 合并命令/combine command
+``` bash
+$ vsplit combine -h
+Usage: vsplit combine [INPUTS] [-o|--out OUT]
+  Combine video files
+
+Available options:
+  INPUTS                   specify input files
+  -o,--out OUT             specify output file, default value is p1.flv
   -h,--help                Show this help text
 ```
 
