@@ -53,6 +53,7 @@ Available options:
   --ss START               specify start time, format HH:MM:SS[.SSS], optional
   --to END                 specify end time, format HH:MM:SS[.SSS], optional
   --vb VIDEO BITRATE       specify video bitrate, default 4M, optional
+  --ab AUDIO BITRATE       specify audio bitrate, default 128K, optional
   -o,--out OUT             specify output file, default value is output.mp4
   SOURCE                   specify source file
   -h,--help                Show this help text

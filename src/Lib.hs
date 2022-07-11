@@ -23,7 +23,7 @@ import Vsplit.Command.Version (version)
 
 data Command
   = Split !Natural !Natural !String !String
-  | Cut !(Maybe String) !(Maybe String) !String !String !String
+  | Cut !(Maybe String) !(Maybe String) !String !String !String !String
   | Listen !(Maybe String) !(Maybe String) !String !String !(Maybe String) !String !String
   | Combine ![ Text ] !(Maybe String)
   | Version
@@ -94,6 +94,12 @@ cutCommand = command "cut"
           <> value "4M"
           <> metavar "VIDEO BITRATE"
           <> help "specify video bitrate, default 4M, optional" )
+      )
+      <*> ( strOption
+        ( long "ab"
+          <> value "128K"
+          <> metavar "AUDIO BITRATE"
+          <> help "specify audio bitrate, default 128K, optional" )
       )
       <*> strOption
       (    long "out"
@@ -186,7 +192,7 @@ versionCommand = command "version" (info (pure Version) (progDesc "Print version
 
 commandDispatch :: Command -> IO ()
 commandDispatch (Split duration base dst file) = split duration base dst file
-commandDispatch (Cut start end vb out file) = cut start end vb out file
+commandDispatch (Cut start end vb ab out file) = cut start end vb ab out file
 commandDispatch (Listen start end format ab vo out file) = listen start end format ab vo out file
 commandDispatch (Combine inputs output) = combine inputs output
 commandDispatch Version = version
@@ -238,8 +244,8 @@ splitProcess videoDuration duration cur base dst file = do
     ExitFailure e -> print e
   pure ()
 
-cut :: Maybe String -> Maybe String -> String -> String -> String -> IO ()
-cut ssM toM vb output input = do
+cut :: Maybe String -> Maybe String -> String -> String -> String -> String -> IO ()
+cut ssM toM vb ab output input = do
   cur <- getCurrentDirectory
   let ss = case ssM of
         Just ssStr -> ["-ss", ssStr]
@@ -251,7 +257,7 @@ cut ssM toM vb output input = do
   let argsb = ["-f", "mp4", "-codec:a", "aac", "-avoid_negative_ts", "make_zero", "-y"]
   withSystemTempDirectory "vsplit" $ \tempDir -> do
     let pass1args = argsa <> ["-x265-params", "pass=1"] <> argsb <> [nullFileName]
-    let pass2args = argsa <> ["-x265-params", "pass=1", "-b:v", vb] <> argsb <> [cur </> output]
+    let pass2args = argsa <> ["-x265-params", "pass=1", "-b:v", vb, "-b:a", ab] <> argsb <> [cur </> output]
     let proc1 = proc "ffmpeg" pass1args
     putStrLn $ "ffmpeg" <> " " <> unwords pass1args
     (exitCode, _out, err) <- readProcess . setWorkingDir tempDir $ proc1
